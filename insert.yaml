@@ -1,0 +1,6 @@
+refdata:
+  environment:
+    dev:
+      drone_secrets:
+      - thursdummy: dummyvalue
+      - thursbelinda: belindavalue

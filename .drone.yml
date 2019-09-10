@@ -1,0 +1,24 @@
+pipeline:
+
+  build:
+    image: quay.io/ukhomeofficedigital/drone-docker
+    commands:
+      - docker build -t cop-secrets:$${DRONE_COMMIT_SHA} .
+    when:
+      event: push
+      branch: master
+
+  image_to_quay:
+    image: quay.io/ukhomeofficedigital/drone-docker
+    secrets:
+      - DOCKER_USERNAME
+      - DOCKER_PASSWORD
+    registry: quay.io
+    repo: quay.io/ukhomeofficedigital/cop-secrets
+    tags:
+      - ${DRONE_BUILD_NUMBER}
+      - ${DRONE_COMMIT_SHA}
+      - latest
+    when:
+      event: push
+      branch: master
