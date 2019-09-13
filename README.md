@@ -94,6 +94,10 @@ export DRONE_WORKSPACE=
 deactivate
 ```
 
+10. Update Manifest repo
+
+Change into the manifest repository and add the new environment variables to the `docker-compose.yml` and `local.yml`
+
 #### Viewing secrets
 
 Various aws cli commands for viewing secrets quickly.
@@ -108,6 +112,8 @@ aws secretsmanager get-secret-value --secret-id=xxx
 
 ### Setting up new application repositories
 
+1. List of variables
+
 Your repository must contain an `env.yaml` file otherwise this will cause your build to fail.
 
 Add all the variables your application needs to `env.yaml`, see the manifest repository `local.yml` for structure and an example.
@@ -121,6 +127,8 @@ keys:
   - slack:
       webhook
 ```
+
+2. Configure synch steps in Drone
 
 In the `.drone.yml` file, add this snippet to the beginning of the pipeline, changing the private or public url for gitlab/github and PRIVATE/PUBLIC token depending on whether it builds on drone private/public.
 ```
@@ -172,8 +180,9 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
 
 You will need to do the manifest repo and cop-secrets repo steps before you can push this change.
 
+3. Manifest repo
 
-### Manifest repo
+Add the new environment variables to the `docker-compose.yml` and `local.yml`
 
 Create a virtual environment
 ```
@@ -212,7 +221,7 @@ Deactivate the virtualenv
 deactivate
 ```
 
-### cop-secrets repo
+4. cop-secrets repo
 
 Create a virtual environment
 ```
@@ -230,7 +239,7 @@ unset AWS_ACCESS_KEY_ID
 
 You may also need to export your AWS_PROFILE name if you do not have a `default` stanza. See [AWS](https://doc.dev.cop.homeoffice.gov.uk/technical.html#aws) for help on setting up your credentials file.
 
-#### Uploading
+Upload to AWS Secrets Manager
 ```
 ./upload_secrets.py -f <env file> -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name>
 ```
