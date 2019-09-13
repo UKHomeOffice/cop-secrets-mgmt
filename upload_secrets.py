@@ -8,7 +8,7 @@ from credentials import *
 from secrets import *
 
 
-def uploadSecrets(client, src_file, repo_name):
+def uploadSecrets(client, src_file, repo_name, dry_run):
   error_list = []
   success_list = []
 
@@ -26,13 +26,20 @@ def uploadSecrets(client, src_file, repo_name):
         description_repo_name = repo_name
 
     try:
-        response = processAWSSecret(client, secret, 'update', description_repo_name)
+        if dry_run == 'N':
+            response = processAWSSecret(client, secret, 'update', description_repo_name)
+        else:
+            response = ''
+
     except ClientError as e:
         error_list.append(secret[0]+ ' ' + e.response['Error']['Message'])
     except Exception as general_e:
         error_list.append(secret[0]+ ' ' + str(general_e))
     else:
         success_list.append(secret[0]+ ' ' + response)
+
+  if dry_run != 'N':
+     print('\n**** No changes have been made, dry-run only ****\n')
 
   summaryStatus(success_list, error_list)
 
@@ -48,6 +55,7 @@ if __name__ == "__main__":
     parser.add_argument('-p', '--primaryaccount', dest='primaryaccount', help='HO primary account')
     parser.add_argument('-a', '--account', dest='account', help='AWS Account number')
     parser.add_argument('-n', '--rolename', dest='rolename', help='AWS role name')
+    parser.add_argument('-d', '--dry-run', dest='dryrun', default='N', help='Only show secrets that would be updated in AWS , default N')
     
     args = parser.parse_args()
 
@@ -59,4 +67,4 @@ if __name__ == "__main__":
     else:
         client = getAWSSecretsManagerCreds('eu-west-2')
 
-    uploadSecrets(client, args.src_file, args.repo_name)
+    uploadSecrets(client, args.src_file, args.repo_name, args.dryrun)

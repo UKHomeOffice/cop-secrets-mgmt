@@ -16,26 +16,101 @@ To use cop-secrets, first clone this repo
 git@github.com:UKHomeOffice/cop-secrets.git
 ```
 
-## Development with Docker
-Once you've cloned the project, build the cop-secrets Docker container
-
-```sh
-docker build -t cop-secrets .
-```
-
-To run the resulting Docker container:
-
-```sh
-docker run cop-secrets
-```
-
 ## Secret Management
 
-### Application repo
+### Existing application repositories
 
-Your repository must contain an env.yaml file otherwise this will cause your build to fail.
+We will add a new `TEST_APP_NEWITEM` variable and update the existing `TEST_APP_ITEM` secret for purposes of detailing the steps required.
 
-Add all the variables your application needs, see the manifest repo local.yml for structure and an example.
+1. Update your repository `env.yaml` with any new environment variables
+
+```
+  - test:
+      app:
+        item
+        newitem
+```
+
+2. Update your `.drone.yaml` with any new environment variables, in alphabetical order. Repeat similarly for staging and production, where applicable.
+
+```
+  deploy_to_dev:
+    ...
+    secrets:
+      - DEV_TEST_APP_ITEM
+      - DEV_TEST_APP_NEWITEM
+      ...
+    commands:
+      - export TEST_APP_ITEM=$${DEV_TEST_APP_ITEM}
+      - export TEST_APP_NEWITEM=$${DEV_TEST_APP_NEWITEM}
+```
+
+3. Change into your cop-secrets repo directory and create/use your virtualenv. See [Create a virtual environment](#cop-secrets-repo). Make sure you unset all AWS credentials.
+
+4. Create a `dev.yml` file which we will use to upload to AWS Secrets Manager with the changes to the secrets to the non prod AWS account.
+
+```
+DEV_TEST_APP_ITEM=fireworks
+DEV_TEST_APP_NEWITEM=sparklers
+```
+
+5. Create a `prod.yml` file which we will use to upload to AWS Secrets Manager with the changes to the secrets to the prod AWS account.
+
+```
+STAGING_TEST_APP_ITEM=candles
+STAGING_TEST_APP_NEWITEM=yankee
+PRODUCTION_TEST_APP_ITEM=chocolate
+PRODUCTION_TEST_APP_NEWITEM=snickers
+```
+
+6. Upload secrets to the dev AWS account.
+
+You may also need to export your AWS_PROFILE name if you do not have a `default` stanza. See [AWS](https://doc.dev.cop.homeoffice.gov.uk/technical.html#aws) for help on setting up your credentials file. Remove the dry run option `-d Y` to update AWS.
+
+```
+./upload_secrets.py -f dev.yml -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name> -d Y
+```
+
+7. Upload secrets to the prod account, remove the dry run option `-d Y` to update AWS.
+
+```
+./upload_secrets.py -f prod.yml -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name> -d Y
+```
+
+8. If you would immediately like to synch AWS with Drone, run the following with the applicable values. Remove the dry run `-d Y` to update Drone.
+```
+export DRONE_DEPLOY_TO=dev
+export DRONE_REPO=
+export DRONE_SERVER=
+export DRONE_TOKEN=
+export DRONE_WORKSPACE=
+
+./aws_secrets.py -d Y
+```
+
+9. Deactivate your cop-secrets virtualenv.
+
+```
+deactivate
+```
+
+#### Viewing secrets
+
+Various aws cli commands for viewing secrets quickly.
+
+```
+aws secretsmanager list-secrets --query 'SecretList[?Description==`Global`].Name'
+aws secretsmanager list-secrets --query 'SecretList[?Description==`DEV Environment`].Name'
+aws secretsmanager list-secrets --query 'SecretList[?Description==`UKHomeOffice/ref-data-api`].Name'
+
+aws secretsmanager get-secret-value --secret-id=xxx
+```
+
+### Setting up new application repositories
+
+Your repository must contain an `env.yaml` file otherwise this will cause your build to fail.
+
+Add all the variables your application needs to `env.yaml`, see the manifest repository `local.yml` for structure and an example.
 Additionally you will need these variables
 ```
 keys:
@@ -43,9 +118,11 @@ keys:
       aws_access_key_id
       aws_secret_access_key
       public_token  or   private_token
+  - slack:
+      webhook
 ```
 
-In the `.drone.yml` file, add this snippet to the beginning of the pipeline, changing the private or public url for gitlab/github
+In the `.drone.yml` file, add this snippet to the beginning of the pipeline, changing the private or public url for gitlab/github and PRIVATE/PUBLIC token depending on whether it builds on drone private/public.
 ```
   synch_dev_secrets:
     image: quay.io/ukhomeofficedigital/cop-secrets
@@ -59,6 +136,7 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
       - source: DRONE_PRIVATE_TOKEN
         target: DRONE_TOKEN
     when:
+      branch: master
       event: push
 
   synch_staging_secrets:
@@ -113,6 +191,7 @@ This will create a `drone_vars.envfile` with local dummy values. Make a copy of 
   - drone_aws_access_key_id
   - drone_aws_secret_access_key
   - drone_private_token or drone_public_token
+  - slack_webhook
 
 In order to sync secrets the Drone and AWS, credentials need to be in Drone, which you will write to from your laptop using your credentials. Ensure your `DRONE_SERVER` and `DRONE_TOKEN` environment variables are set:
 ```
@@ -149,48 +228,9 @@ unset AWS_SECRET_ACCESS_KEY
 unset AWS_ACCESS_KEY_ID
 ```
 
-Your `~/.aws/credentials` file must have a *[default]* stanza with your HO Main account access key id and secret access key.
+You may also need to export your AWS_PROFILE name if you do not have a `default` stanza. See [AWS](https://doc.dev.cop.homeoffice.gov.uk/technical.html#aws) for help on setting up your credentials file.
 
 #### Uploading
-```
-./upload_secrets.py -l Y -m <your_digital_email> -f ../../gitlab/manifest/drone_vars.envfile -e notprod -r <repo_name>
-```
-
-If you were successfully authenticated you can then export the AWS credentials that it prints out as these will be valid for an hour and you will not need to login if uploading more secrets. Uploading secrets without logging in:
-```
-./upload_secrets.py -f ../../gitlab/manifest/drone_vars.envfile -e notprod -r <repo_name>
-```
-
-If you are uploading to staging or production, you will need to specify `-e prod` and re-authenticate as the script defaults to the non prod account when assuming your role.
-
-#### Changing secrets
-
-##### Using AWS CLI
-See [AWS account information](https://gitlab.digital.homeoffice.gov.uk/cop/cop-docs/blob/master/source/documentation/overview/cop_guide.md) for connecting using MFA and assuming a role into nonprod and prod AWS accounts.
-
-Get secret value
-```
-aws secretsmanager get-secret-value --secret-id=<secret_name>
-aws secretsmanager describe-secret --secret-id=<secret_name>
-```
-
-When updating or creating secrets, ensure the description field is populated with the following
-- Global (if the same secret is used across accounts and environments
-- DEV|STAGING|PRODUCTION Environment (if the same secret is used across the environment, i.e. STAGING Environment)
-- <Repo-name> (if the secret is specific to a repo, i.e. cop/cop-vault)
-
-Update secret value
-```
-aws secretsmanager update-secret --secret-id=<secret_name> --description=<repo-name> --secret-string=<secret_value>
-```
-Create secret value
-```
-aws secretsmanager create-secret --name=<secret_name> --description=<repo-name> --secret-string=<secret_value>
-```
-
-##### Using python
-
-Manufacture an envfile and then run the python script as normal
 ```
 ./upload_secrets.py -f <env file> -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name>
 ```

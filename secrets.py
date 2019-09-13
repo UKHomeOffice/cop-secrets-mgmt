@@ -44,7 +44,8 @@ def processAWSSecret(client, secret, action, repo_name=''):
                 if describe_response['Description'] == repo_name:
                     put_response = client.put_secret_value(SecretId=secret_name, SecretString=secret_value)
                 else:
-                    raise Exception('Found non-unique secret ' + secret_name + ', currently in use by ' + describe_response['Description'])
+                    msg='Found non-unique secret for ' + repo_name + ', currently in use by ' + describe_response['Description']
+                    raise Exception(msg)
             else:
                 update_response = client.update_secret(SecretId=secret_name, SecretString=secret_value, Description=repo_name)
         except ClientError as update_e:
