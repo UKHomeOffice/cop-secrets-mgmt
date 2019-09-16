@@ -4,9 +4,9 @@ This is being developed by the UK Home Office and is used to store the configura
 
 # Requirements
 
-* AWS credentials
+* AWS credentials, aws cli
 * Drone credentials
-* Python3
+* Python3, virtualenv
 
 # Usage
 
@@ -18,11 +18,30 @@ git@github.com:UKHomeOffice/cop-secrets.git
 
 ## Secret Management
 
+### Tools
+
+Install brew on Mac
+
+```
+/usr/bin/ruby -e "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/master/install)"
+```
+
+Use brew to install aws cli
+```
+brew install awscli
+```
+
+Install virtual environment
+
+```
+pip install virtualenv
+```
+
 ### Existing application repositories
 
 We will add a new `TEST_APP_NEWITEM` variable and update the existing `TEST_APP_ITEM` secret for purposes of detailing the steps required.
 
-1. Update your repository `env.yaml` with any new environment variables
+1. Update your repository `env.yaml` with any new environment variables, in alphabetical order.
 
 ```
   - test:
@@ -37,12 +56,10 @@ We will add a new `TEST_APP_NEWITEM` variable and update the existing `TEST_APP_
   deploy_to_dev:
     ...
     secrets:
-      - DEV_TEST_APP_ITEM
-      - DEV_TEST_APP_NEWITEM
-      ...
-    commands:
-      - export TEST_APP_ITEM=$${DEV_TEST_APP_ITEM}
-      - export TEST_APP_NEWITEM=$${DEV_TEST_APP_NEWITEM}
+      - source: DEV_TEST_APP_ITEM
+        target: TEST_APP_ITEM
+      - source: DEV_TEST_APP_NEWITEM
+        target: TEST_APP_NEWITEM
 ```
 
 3. Change into your cop-secrets repo directory and create/use your virtualenv. See [Create a virtual environment](#cop-secrets-repo). Make sure you unset all AWS credentials.
@@ -68,6 +85,7 @@ PRODUCTION_TEST_APP_NEWITEM=snickers
 You may also need to export your AWS_PROFILE name if you do not have a `default` stanza. See [AWS](https://doc.dev.cop.homeoffice.gov.uk/technical.html#aws) for help on setting up your credentials file. Remove the dry run option `-d Y` to update AWS.
 
 ```
+export AWS_PROFILE=<your profile name>
 ./upload_secrets.py -f dev.yml -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name> -d Y
 ```
 
@@ -77,13 +95,14 @@ You may also need to export your AWS_PROFILE name if you do not have a `default`
 ./upload_secrets.py -f prod.yml -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name> -d Y
 ```
 
-8. If you would immediately like to synch AWS with Drone, run the following with the applicable values. Remove the dry run `-d Y` to update Drone.
+8. If you would like to synch AWS with Drone immediately, run the following with the applicable values. Remove the dry run `-d Y` to update Drone.
+
 ```
-export DRONE_DEPLOY_TO=dev
-export DRONE_REPO=
-export DRONE_SERVER=
-export DRONE_TOKEN=
-export DRONE_WORKSPACE=
+export DRONE_DEPLOY_TO=       - This should be dev, staging or production
+export DRONE_REPO=            - This should be in the format UKHomeOffice/repo_name or cop/repo_name
+export DRONE_SERVER=          - Copy from drone server token page
+export DRONE_TOKEN=           - Copy from drone server token page
+export DRONE_WORKSPACE=       - Path to the env.yaml you are uploading secrets for
 
 ./aws_secrets.py -d Y
 ```
@@ -94,9 +113,9 @@ export DRONE_WORKSPACE=
 deactivate
 ```
 
-10. Update Manifest repo
+10. Update local environment setup
 
-Change into the manifest repository and add the new environment variables to the `docker-compose.yml` and `local.yml`
+In order to maintain a working local environment, change into the manifest repository and add the new environment variables to the `docker-compose.yml` and `local.yml` even if you do not use docker-compose. This is to ensure those who do, have all the correct settings for running the application locally.
 
 #### Viewing secrets
 
@@ -108,6 +127,8 @@ aws secretsmanager list-secrets --query 'SecretList[?Description==`DEV Environme
 aws secretsmanager list-secrets --query 'SecretList[?Description==`UKHomeOffice/ref-data-api`].Name'
 
 aws secretsmanager get-secret-value --secret-id=xxx
+
+for mysecret in $(aws secretsmanager list-secrets  --query 'SecretList[?Description==`Global`].[Name]' --output text); do aws secretsmanager get-secret-value --secret-id=$mysecret --query '[Name,SecretString]' --output text; done
 ```
 
 ### Setting up new application repositories
@@ -117,7 +138,7 @@ aws secretsmanager get-secret-value --secret-id=xxx
 Your repository must contain an `env.yaml` file otherwise this will cause your build to fail.
 
 Add all the variables your application needs to `env.yaml`, see the manifest repository `local.yml` for structure and an example.
-Additionally you will need these variables
+Additionally you will need these variables. Use the private token when using gitlab repos, the public token when using github projects.
 ```
 keys:
   - drone:
@@ -144,7 +165,6 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
       - source: DRONE_PRIVATE_TOKEN
         target: DRONE_TOKEN
     when:
-      branch: master
       event: push
 
   synch_staging_secrets:
@@ -241,5 +261,6 @@ You may also need to export your AWS_PROFILE name if you do not have a `default`
 
 Upload to AWS Secrets Manager
 ```
+export AWS_PROFILE=<your profile name>
 ./upload_secrets.py -f <env file> -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name>
 ```
