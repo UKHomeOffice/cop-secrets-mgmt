@@ -216,20 +216,50 @@ Run a test to see what will get populated for your repo
 ./bin/env.py -f local.yml -s <your_repo_path>/env.yaml -d -p dev
 ```
 
-This will create a `drone_vars.envfile` with local dummy values. Make a copy of this file called `seed_drone.envfile` and remove all the variables apart from the following, and also remove the *DEV_* prefix from the drone token variable name. Change the dummy values to dev values.
-  - drone_aws_access_key_id
-  - drone_aws_secret_access_key
-  - drone_private_token or drone_public_token
-  - slack_webhook
+This will create a `drone_vars.envfile` with local dummy values.
 
-In order to sync secrets the Drone and AWS, credentials need to be in Drone, which you will write to from your laptop using your credentials. Ensure your `DRONE_SERVER` and `DRONE_TOKEN` environment variables are set:
+Run with dev secrets
 ```
+./bin/env.py -f <dev_secrets.yml> -s <your_repo_path>/env.yaml -d -p dev -o dev_seed_drone.envfile
+```
+
+Remove all the variables apart from the following, and also remove the *DEV_* prefix from the drone token and slack variable names, for example:
+```
+DRONE_PUBLIC_TOKEN=thisismysecretvalue   or DRONE_PRIVATE_TOKEN=thisismysecretvalue
+SLACK_WEBHOOK=https://wowwheredoesthisgo
+DEV_DRONE_AWS_ACCESS_KEY_ID=myawsaccesskeyid
+DEV_DRONE_AWS_SECRET_ACCESS_KEY=myawssecretaccesskey
+```
+
+In order to sync secrets the Drone and AWS, credentials need to be in Drone, which you will write to from your laptop using your credentials. Ensure your `DRONE_SERVER` and `DRONE_TOKEN` environment variables are set. These can be found in the token page of drone:
+```
+export DRONE_SERVER=blah
+export DRONE_TOKEN=blah
 ./bin/drone.py -f seed_drone.envfile -r <reponame>
+e.g. ./bin/drone.py -f dev_seed_drone.envfile -r UKHomeOffice/cop-example-repo
 ```
 
-Repeat above changing the `seed_drone.envfile` with staging and production values, and changing *DEV_* to *STAGING_* and *PRODUCTION_*.
+Run with staging secrets
+```
+./bin/env.py -f <staging_secrets.yml> -s <your_repo_path>/env.yaml -d -p staging -o staging_seed_drone.envfile
+```
 
-If you are happy with what you see in `drone_vars.envfile`, you basically need to make a `dev`, `staging` and `prod` version of the `local.yml` with the correct passwords. To update each environment, do:
+Repeat removal of all variables from the dev step above, and remove the *STAGING_* prefix from the drone token and slack variable names.
+```
+e.g. ./bin/drone.py -f staging_seed_drone.envfile -r UKHomeOffice/cop-example-repo
+```
+
+Run with production secrets
+```
+./bin/env.py -f <production_secrets.yml> -s <your_repo_path>/env.yaml -d -p production -o production_seed_drone.envfile
+```
+
+Repeat removal of all variables from the dev step above, and remove the *PRODUCTION_* prefix from the drone token and slack variable names.
+```
+e.g. ./bin/drone.py -f production_seed_drone.envfile -r UKHomeOffice/cop-example-repo
+```
+
+To create the files for uploading the secrets to AWS in step 4, do the following:
 ```
 ./bin/env.py -f dev.yml -s <your_repo_path>/env.yaml -d -p dev -o dev_drone_vars.envfile
 ./bin/env.py -f staging.yml -s <your_repo_path>/env.yaml -d -p staging -o staging_drone_vars.envfile
@@ -239,6 +269,11 @@ If you are happy with what you see in `drone_vars.envfile`, you basically need t
 Deactivate the virtualenv
 ```
 deactivate
+```
+
+Clean up
+```
+rm -f *seed_drone.envfile
 ```
 
 4. cop-secrets repo
@@ -259,8 +294,29 @@ unset AWS_ACCESS_KEY_ID
 
 You may also need to export your AWS_PROFILE name if you do not have a `default` stanza. See [AWS](https://doc.dev.cop.homeoffice.gov.uk/technical.html#aws) for help on setting up your credentials file.
 
-Upload to AWS Secrets Manager
+Upload to AWS Secrets Manager Dev
 ```
 export AWS_PROFILE=<your profile name>
 ./upload_secrets.py -f <env file> -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name>
+e.g. ./upload_secrets.py -f ../manifest/dev_drone_vars.envfile -r UKHomeOffice/cop-example-repo -l Y -m john.doe@digital.homeoffice.gov.uk -p 123456789 -a 111111111 -n role/myrolename
+```
+
+Upload to AWS Secrets Manager Staging
+```
+export AWS_PROFILE=<your profile name>
+./upload_secrets.py -f <env file> -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name>
+e.g. ./upload_secrets.py -f ../manifest/staging_drone_vars.envfile -r UKHomeOffice/cop-example-repo -l Y -m john.doe@digital.homeoffice.gov.uk -p 123456789 -a 222222222 -n role/myrolename
+```
+
+Upload to AWS Secrets Manager Production
+```
+export AWS_PROFILE=<your profile name>
+./upload_secrets.py -f <env file> -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name>
+e.g. ./upload_secrets.py -f ../manifest/production_drone_vars.envfile -r UKHomeOffice/cop-example-repo -l Y -m john.doe@digital.homeoffice.gov.uk -p 123456789 -a 222222222 -n role/myrolename
+```
+
+Clean up
+```
+cd <manifest repo directory>
+rm -f *drone_vars.envfile
 ```
