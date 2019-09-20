@@ -104,8 +104,11 @@ export DRONE_SERVER=          - Copy from drone server token page
 export DRONE_TOKEN=           - Copy from drone server token page
 export DRONE_WORKSPACE=       - Path to the env.yaml you are uploading secrets for
 
-./aws_secrets.py -d Y
+./aws_secrets.py -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name> -d Y
+e.g. ./aws_secrets.py -l Y -m john.doe@digital.homeoffice.gov.uk -p 123456789 -a 222222222 -n role/myrolename -d Y
 ```
+
+Run it without the dry run flag to update Drone from AWS.
 
 9. Deactivate your cop-secrets virtualenv.
 
