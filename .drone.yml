@@ -11,8 +11,10 @@ pipeline:
   image_to_quay:
     image: quay.io/ukhomeofficedigital/drone-docker
     secrets:
-      - DOCKER_USERNAME
-      - DOCKER_PASSWORD
+      - source: QUAY_USERNAME
+        target: DOCKER_USERNAME
+      - source: QUAY_PASSWORD
+        target: DOCKER_PASSWORD
     registry: quay.io
     repo: quay.io/ukhomeofficedigital/cop-secrets
     tags:
