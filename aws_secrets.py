@@ -40,9 +40,11 @@ def processEnvSecrets(client, src_file, dry_run):
     error_list = []
     success_list = []
 
-    secret_env = os.environ.get('DRONE_DEPLOY_TO')
+    secret_env = os.environ.get('DEPLOY_ENV')
     if secret_env is None:
-        secret_env = 'dev'
+        secret_env = os.environ.get('DRONE_DEPLOY_TO')
+        if secret_env is None:
+            secret_env = 'dev'
 
     drone_server_url = os.environ.get('DRONE_SERVER')
     if drone_server_url is None:
