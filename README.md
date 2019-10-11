@@ -16,6 +16,13 @@ To use cop-secrets, first clone this repo
 git@github.com:UKHomeOffice/cop-secrets.git
 ```
 
+# Drone secrets
+
+Name|Example value
+---|---
+docker_password|xxx (Global for all repositories and environments)
+docker_username|docker (Global for all repositories and environments)
+
 ## Secret Management
 
 ### Tools
