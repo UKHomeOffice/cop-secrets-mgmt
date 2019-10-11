@@ -98,7 +98,7 @@ export AWS_PROFILE=<your profile name>
 8. If you would like to synch AWS with Drone immediately, run the following with the applicable values. Remove the dry run `-d Y` to update Drone.
 
 ```
-export DRONE_DEPLOY_TO=       - This should be dev, staging or production
+export DEPLOY_ENV=            - This should be dev, staging or production
 export DRONE_REPO=            - This should be in the format UKHomeOffice/repo_name or cop/repo_name
 export DRONE_SERVER=          - Copy from drone server token page
 export DRONE_TOKEN=           - Copy from drone server token page
@@ -160,6 +160,7 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
     image: quay.io/ukhomeofficedigital/cop-secrets
     environment:
       - DRONE_SERVER=https://drone-gitlab.acp.homeoffice.gov.uk
+      - DEPLOY_ENV=dev
     secrets:
       - source: DEV_DRONE_AWS_ACCESS_KEY_ID
         target: AWS_ACCESS_KEY_ID
@@ -174,6 +175,7 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
     image: quay.io/ukhomeofficedigital/cop-secrets
     environment:
       - DRONE_SERVER=https://drone-gitlab.acp.homeoffice.gov.uk
+      - DEPLOY_ENV=staging
     secrets:
       - source: STAGING_DRONE_AWS_ACCESS_KEY_ID
         target: AWS_ACCESS_KEY_ID
@@ -182,13 +184,14 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
       - source: DRONE_PRIVATE_TOKEN
         target: DRONE_TOKEN
     when:
-      event: deployment
-      environment: staging
+      branch: master
+      event: push
 
   synch_production_secrets:
     image: quay.io/ukhomeofficedigital/cop-secrets
     environment:
       - DRONE_SERVER=https://drone-gitlab.acp.homeoffice.gov.uk
+      - DEPLOY_ENV=production
     secrets:
       - source: PRODUCTION_DRONE_AWS_ACCESS_KEY_ID
         target: AWS_ACCESS_KEY_ID
@@ -197,8 +200,8 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
       - source: DRONE_PRIVATE_TOKEN
         target: DRONE_TOKEN
     when:
-      event: deployment
-      environment: production
+      branch: master
+      event: push
 ```
 
 You will need to do the manifest repo and cop-secrets repo steps before you can push this change.
