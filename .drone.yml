@@ -19,6 +19,7 @@ pipeline:
     repo: quay.io/ukhomeofficedigital/cop-secrets
     tags:
       - ${DRONE_COMMIT_SHA}
+      - latest
     when:
       event: push
       branch: master
