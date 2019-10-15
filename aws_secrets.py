@@ -82,9 +82,12 @@ def processEnvSecrets(client, src_file, dry_run):
         
         try:
             secret_value = processAWSSecret(client, secret_key_name, 'list')
-            if dry_run == 'N':
+            if dry_run != 'N':
+                success_list.append('Dry run ' + secret_key_name)
+            else
                 updateDroneSecret(drone_secrets_url, drone_user_token, secret_key_name, secret_value)
-            success_list.append(secret_key_name)
+                success_list.append(secret_key_name)
+         
         except ClientError as e:
             error_list.append(secret_key_name + ' ' + e.response['Error']['Message'])
 
