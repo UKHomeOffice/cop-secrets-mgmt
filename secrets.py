@@ -69,14 +69,15 @@ def updateDroneSecret(drone_url, drone_token, secret_key, secret_value):
         get_response = requests.request("GET", drone_url + '/' + secret_key, headers=header_str)
 
         if get_response.status_code == 200:
-            # Update secret
-            payload = {'value': "" + secret_value}
-            response = requests.patch(drone_url + '/' + secret_key, data=payload, headers=header_str)
-        else:
-            # Create secret
-            print(secret_key + ' does not exist, adding')
-            payload = {'name': "" + secret_key, 'value': "" + secret_value, 'event': ['push','tag','deployment']}
-            response = requests.post(drone_url, json=payload, headers=header_str)
+            print('**Deleting** ' + secret_key)
+            response = requests.delete(drone_url + '/' + secret_key, headers=header_str)
+            if response.status_code != 204:
+               raise Exception(str(response.status_code) + ' ' + response.text)
+
+        # Create secret
+        print(secret_key + ' does not exist, adding')
+        payload = {'name': "" + secret_key, 'value': "" + secret_value, 'event': ['push','tag','deployment']}
+        response = requests.post(drone_url, json=payload, headers=header_str)
 
         if response.status_code != 200:
            raise Exception(str(response.status_code) + ' ' + response.text)
