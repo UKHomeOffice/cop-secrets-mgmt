@@ -4,6 +4,7 @@ import base64
 import requests
 from botocore.exceptions import ClientError
 
+
 def processAWSSecret(client, secret, action, repo_name=''):
     if action == 'list':
         secret = secret.lower()
