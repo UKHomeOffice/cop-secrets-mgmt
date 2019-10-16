@@ -102,25 +102,18 @@ export AWS_PROFILE=<your profile name>
 ./upload_secrets.py -f prod.yml -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name> -d Y
 ```
 
-8. If you would like to synch AWS with Drone immediately, run the following with the applicable values. Remove the dry run `-d Y` to update Drone.
-
-```
-export DEPLOY_ENV=            - This should be dev, staging or production
-export DRONE_REPO=            - This should be in the format UKHomeOffice/repo_name or cop/repo_name
-export DRONE_SERVER=          - Copy from drone server token page
-export DRONE_TOKEN=           - Copy from drone server token page
-export DRONE_WORKSPACE=       - Path to the env.yaml you are uploading secrets for
-
-./aws_secrets.py -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name> -d Y
-e.g. ./aws_secrets.py -l Y -m john.doe@digital.homeoffice.gov.uk -p 123456789 -a 222222222 -n role/myrolename -d Y
-```
-
-Run it without the dry run flag to update Drone from AWS.
-
-9. Deactivate your cop-secrets virtualenv.
+8. Deactivate your cop-secrets virtualenv.
 
 ```
 deactivate
+```
+
+9. Update drone variables
+
+Export the `DRONE_SERVER` and `DRONE_TOKEN` environment variables from `https://drone-gitlab.acp.homeoffice.gov.uk/account/token` for gitlab repositories, and `https://drone.acp.homeoffice.gov.uk/account/token` for github repositories. Find the last master build number for your repository in Drone
+
+```
+drone deploy <repo-name> <build-number> secrets
 ```
 
 10. Update local environment setup
@@ -128,6 +121,8 @@ deactivate
 In order to maintain a working local environment, change into the manifest repository and add the new environment variables to the `docker-compose.yml` and `local.yml` even if you do not use docker-compose. This is to ensure those who do, have all the correct settings for running the application locally.
 
 #### Viewing secrets
+
+##### AWS CLI
 
 Various aws cli commands for viewing secrets quickly.
 
@@ -139,6 +134,17 @@ aws secretsmanager list-secrets --query 'SecretList[?Description==`UKHomeOffice/
 aws secretsmanager get-secret-value --secret-id=xxx
 
 for mysecret in $(aws secretsmanager list-secrets  --query 'SecretList[?Description==`Global`].[Name]' --output text); do aws secretsmanager get-secret-value --secret-id=$mysecret --query '[Name,SecretString]' --output text; done
+```
+
+##### Python
+
+Export the environment and path to the repo containing the env.file for which we are going to query AWS and then display the list of secrets and values
+```
+export DRONE_WORKSPACE=path_to_env_file
+export DEPLOY_ENV=dev|staging|production
+
+./repo_secrets.py -l Y/N -m email@digital.homeoffice.gov.uk -p <primary AWS account> -a <assume role account> -n <role/role_name>
+e.g. ./repo_secrets.py -l YN -m john.doe@digital.homeoffice.gov.uk -p 123456 -a 789012 -n role/myrole
 ```
 
 ### Setting up new application repositories
@@ -176,7 +182,8 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
       - source: DRONE_PRIVATE_TOKEN
         target: DRONE_TOKEN
     when:
-      event: push
+      environment: secrets
+      event: deployment
 
   synch_staging_secrets:
     image: quay.io/ukhomeofficedigital/cop-secrets
@@ -191,8 +198,8 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
       - source: DRONE_PRIVATE_TOKEN
         target: DRONE_TOKEN
     when:
-      branch: master
-      event: push
+      environment: secrets
+      event: deployment
 
   synch_production_secrets:
     image: quay.io/ukhomeofficedigital/cop-secrets
@@ -207,11 +214,9 @@ In the `.drone.yml` file, add this snippet to the beginning of the pipeline, cha
       - source: DRONE_PRIVATE_TOKEN
         target: DRONE_TOKEN
     when:
-      branch: master
-      event: push
+      environment: secrets
+      event: deployment
 ```
-
-You will need to do the manifest repo and cop-secrets repo steps before you can push this change.
 
 3. Manifest repo
 
@@ -326,6 +331,14 @@ Upload to AWS Secrets Manager Production
 export AWS_PROFILE=<your profile name>
 ./upload_secrets.py -f <env file> -r <repo_name> -l Y -m <digital_email> -p <primary AWS account> -a <assume role account> -n <role/role_name>
 e.g. ./upload_secrets.py -f ../manifest/production_drone_vars.envfile -r UKHomeOffice/cop-example-repo -l Y -m john.doe@digital.homeoffice.gov.uk -p 123456789 -a 222222222 -n role/myrolename
+```
+
+Update drone variables
+
+Export the `DRONE_SERVER` and `DRONE_TOKEN` environment variables from `https://drone-gitlab.acp.homeoffice.gov.uk/account/token` for gitlab repositories, and `https://drone.acp.homeoffice.gov.uk/account/token` for github repositories. Find the last master build number for your repository in Drone
+
+```
+drone deploy <repo-name> <build-number> secrets
 ```
 
 Clean up

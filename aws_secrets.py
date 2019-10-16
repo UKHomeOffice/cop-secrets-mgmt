@@ -1,35 +1,7 @@
 #!/usr/bin/env python
 
-import argparse
-import os
-import yaml
 from common import *
-from credentials import *
 from secrets import *
-
-def flatten_dict(current, key, result):
-    if isinstance(current, dict):
-        for k in current:
-            new_key = "{0}_{1}".format(key, k) if len(key) > 0 else k
-            flatten_dict(current[k], new_key, result)
-    else:
-        result[key] = current
-
-    return result
-
-
-def flatten_seed(data):
-  seed_list = []
-  for key in data['keys']:
-    if isinstance(key, dict):
-      seed_result = flatten_dict(key, '', {})
-      for key_name, key_values in seed_result.items():
-        for key_value in key_values.split():
-          seed_list.append(key_name + '_' + key_value)
-    else:
-      seed_list.append(key)
-
-  return seed_list
 
 
 def processEnvSecrets(client, src_file, dry_run):
@@ -106,15 +78,8 @@ def processEnvSecrets(client, src_file, dry_run):
 if __name__ == "__main__":
     secrets_list_file = os.environ.get('DRONE_WORKSPACE') + '/env.yaml'
 
-    parser = argparse.ArgumentParser(description='Secrets management')
-
-    parser.add_argument('-l', '--auth', dest='authenticate', default='N', choices=['Y', 'N'], help='Authentication required Y/N, default N')
-    parser.add_argument('-m', '--mfa', dest='mfa', help='MFA device id')
-    parser.add_argument('-p', '--primaryaccount', dest='primaryaccount', help='HO primary account')
-    parser.add_argument('-a', '--account', dest='account', help='AWS Account number')
-    parser.add_argument('-n', '--rolename', dest='rolename', help='AWS role name')
+    parser = getUserParser()
     parser.add_argument('-d', '--dry-run', dest='dryrun', default='N', help='Only show secrets that would be updated in Drone, default N')
-
     args = parser.parse_args()
 
     # Validate yaml file
@@ -122,11 +87,6 @@ if __name__ == "__main__":
         exit(1)
 
     # Get credentials
-    if args.authenticate == "Y":
-        role_arn = 'arn:aws:iam::' + args.account + ':' + args.rolename
-        mfa_arn  = 'arn:aws:iam::' + args.primaryaccount + ':mfa/' + args.mfa
-        client = getAssumeRoleCreds(role_arn, mfa_arn)
-    else:
-        client = getAWSSecretsManagerCreds('eu-west-2')
+    client = getCredentials(args)
 
     processEnvSecrets(client, secrets_list_file, args.dryrun)
