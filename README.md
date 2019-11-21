@@ -74,17 +74,17 @@ We will add a new `TEST_APP_NEWITEM` variable and update the existing `TEST_APP_
 4. Create a `dev.yml` file which we will use to upload to AWS Secrets Manager with the changes to the secrets to the non prod AWS account.
 
 ```
-DEV_TEST_APP_ITEM=fireworks
-DEV_TEST_APP_NEWITEM=sparklers
+dev_test_app_item=fireworks
+dev_test_app_newitem=sparklers
 ```
 
 5. Create a `prod.yml` file which we will use to upload to AWS Secrets Manager with the changes to the secrets to the prod AWS account.
 
 ```
-STAGING_TEST_APP_ITEM=candles
-STAGING_TEST_APP_NEWITEM=yankee
-PRODUCTION_TEST_APP_ITEM=chocolate
-PRODUCTION_TEST_APP_NEWITEM=snickers
+staging_test_app_item=candles
+staging_test_app_newitem=yankee
+production_test_app_item=chocolate
+production_test_app_newitem=snickers
 ```
 
 6. Upload secrets to the dev AWS account.
@@ -243,10 +243,10 @@ Run with dev secrets
 
 Remove all the variables apart from the following, and also remove the *DEV_* prefix from the drone token and slack variable names, for example:
 ```
-DRONE_PUBLIC_TOKEN=thisismysecretvalue   or DRONE_PRIVATE_TOKEN=thisismysecretvalue
-SLACK_WEBHOOK=https://wowwheredoesthisgo
-DEV_DRONE_AWS_ACCESS_KEY_ID=myawsaccesskeyid
-DEV_DRONE_AWS_SECRET_ACCESS_KEY=myawssecretaccesskey
+drone_public_token=thisismysecretvalue   or drone_private_token=thisismysecretvalue
+slack_webhook=https://wowwheredoesthisgo
+dev_drone_aws_access_key_id=myawsaccesskeyid
+dev_drone_aws_secret_access_key=myawssecretaccesskey
 ```
 
 In order to sync secrets the Drone and AWS, credentials need to be in Drone, which you will write to from your laptop using your credentials. Ensure your `DRONE_SERVER` and `DRONE_TOKEN` environment variables are set. These can be found in the token page of drone:
