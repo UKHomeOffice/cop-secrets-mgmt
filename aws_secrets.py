@@ -76,11 +76,11 @@ def processEnvSecrets(client, src_file, dry_run):
 
 
 if __name__ == "__main__":
-    secrets_list_file = os.environ.get('DRONE_WORKSPACE') + '/env.yaml'
-
     parser = getUserParser()
     parser.add_argument('-d', '--dry-run', dest='dryrun', default='N', help='Only show secrets that would be updated in Drone, default N')
     args = parser.parse_args()
+
+    secrets_list_file = os.environ.get('DRONE_WORKSPACE') + '/env.yaml'
 
     # Validate yaml file
     if not validateFile(secrets_list_file):

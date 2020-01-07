@@ -76,6 +76,9 @@ def updateDroneSecret(drone_url, drone_token, secret_key, secret_value):
                raise Exception(str(response.status_code) + ' ' + response.text)
 
         # Create secret
+        if get_response.status_code == 401:
+            raise Exception('**Access denied** Please check the drone credentials for ' + drone_url + '/' + secret_key)
+
         print(secret_key + ' does not exist, adding')
         payload = {'name': "" + secret_key, 'value': "" + secret_value, 'event': ['push','tag','deployment']}
         response = requests.post(drone_url, json=payload, headers=header_str)
