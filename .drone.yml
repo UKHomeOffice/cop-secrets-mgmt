@@ -6,6 +6,8 @@ pipeline:
       - docker build -t cop-secrets:$${DRONE_COMMIT_SHA} .
     when:
       event: push
+    environment:
+      - DRONE_VERSION=${DRONE_SYSTEM_VERSION}
 
   vulnerability-scan:
     image: quay.io/ukhomeofficedigital/anchore-submission:latest
