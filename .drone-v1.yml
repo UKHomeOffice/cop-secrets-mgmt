@@ -17,6 +17,9 @@ steps:
   volumes:
   - name: dockersock
     path: /var/run
+  environment:
+    DRONE_VERSION: ${DRONE_SYSTEM_VERSION}
+
   when:
     event:
     - push

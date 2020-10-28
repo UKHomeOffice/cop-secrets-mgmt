@@ -4,6 +4,21 @@ from common import *
 from secrets import *
 
 
+def check_version():
+    version = os.environ.get('DRONE_VERSION')
+    print("Checking Drone Version: {}".format(version))
+    try:
+        version = version.split('v')[-1]
+        version = int(version.split('.')[0])
+    except (AttributeError, ValueError):
+        print("Error: Drone version: {}, is not a recognised version, defaulting to Drone v0 payload".format(version))
+        return "v0"
+    if version >= 1:
+        print("Drone version: {}, Using Drone v1 Payload".format(version))
+        return "v1"
+    print("Drone version: {}, Using Drone v0 payload  (Original Method)".format(version))
+    return "v0"
+
 def processEnvSecrets(client, src_file, dry_run):
     with open(src_file, 'r') as seed_stream:
         seed_data = yaml.safe_load(seed_stream)
@@ -39,10 +54,7 @@ def processEnvSecrets(client, src_file, dry_run):
             print('Drone authorization token not found in AWS')
             exit(1)
 
-    drone_version = os.environ.get('DRONE_VERSION')
-    if drone_version != 'v1':
-        print('Drone version not set, or not "v1", defaulting to "v0"')
-        drone_version='v0'
+    drone_version = check_version()
 
     repo = os.environ.get('DRONE_REPO')
     if repo is None:
