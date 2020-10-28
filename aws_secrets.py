@@ -39,6 +39,11 @@ def processEnvSecrets(client, src_file, dry_run):
             print('Drone authorization token not found in AWS')
             exit(1)
 
+    drone_version = os.environ.get('DRONE_VERSION')
+    if drone_version != 'v1':
+        print('Drone version not set, or not "v1", defaulting to "v0"')
+        drone_version='v0'
+
     repo = os.environ.get('DRONE_REPO')
     if repo is None:
         print('DRONE_REPO is not set')
@@ -51,15 +56,15 @@ def processEnvSecrets(client, src_file, dry_run):
             secret_key_name = secret
         else:
             secret_key_name = secret_env + '_' + secret
-        
+
         try:
             secret_value = processAWSSecret(client, secret_key_name, 'list')
             if dry_run != 'N':
                 success_list.append('Dry run ' + secret_key_name)
             else:
-                updateDroneSecret(drone_secrets_url, drone_user_token, secret_key_name, secret_value)
+                updateDroneSecret(drone_secrets_url, drone_user_token, drone_version, secret_key_name, secret_value)
                 success_list.append(secret_key_name)
-         
+
         except ClientError as e:
             error_list.append(secret_key_name + ' ' + e.response['Error']['Message'])
 

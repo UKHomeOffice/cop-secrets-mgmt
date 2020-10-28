@@ -63,7 +63,7 @@ def processAWSSecret(client, secret, action, repo_name=''):
         return ""
 
 
-def updateDroneSecret(drone_url, drone_token, secret_key, secret_value):
+def updateDroneSecret(drone_url, drone_token, drone_version, secret_key, secret_value):
     header_str = {'Authorization': "Bearer " + drone_token}
 
     try:
@@ -81,6 +81,8 @@ def updateDroneSecret(drone_url, drone_token, secret_key, secret_value):
 
         print(secret_key + ' does not exist, adding')
         payload = {'name': "" + secret_key, 'value': "" + secret_value, 'event': ['push','tag','deployment']}
+        if drone_version == 'v1':
+            payload = {'name':  secret_key, 'data': secret_value, 'pull_request': False}
         response = requests.post(drone_url, json=payload, headers=header_str)
 
         if response.status_code != 200:
