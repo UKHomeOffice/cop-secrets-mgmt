@@ -1,5 +1,4 @@
 FROM python:3
-ENV DRONE_VERSION ${DRONE_VERSION}
 
 WORKDIR /usr/src/app
 
