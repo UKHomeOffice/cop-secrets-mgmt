@@ -10,7 +10,7 @@ def check_version():
     try:
         version = version.split('v')[-1]
         version = int(version.split('.')[0])
-    except ValueError:
+    except (AttributeError, ValueError):
         print("Error: Drone version: {}, is not a recognised version, defaulting to Drone v0 payload".format(version))
         return "v0"
     if version >= 1:
