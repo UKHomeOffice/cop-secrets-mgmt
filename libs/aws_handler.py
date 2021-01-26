@@ -10,7 +10,7 @@ from botocore.exceptions import ClientError
 class AWS(object):
 
     def __init__(self, data=None):
-        self.data = config_data
+        self.data = data
         self.client = None
 
     def get_credentials(self):

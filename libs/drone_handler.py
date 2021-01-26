@@ -19,8 +19,6 @@ class Drone(object):
 
     def __init__(self, data=None):
         self.data = data
-        self.header = ()
-        self.session = None
         self.good_status = [200, 201, 202, 203, 204]
         self.headers = {'Authorization': "Bearer " + self.data['drone']['token']}
 
