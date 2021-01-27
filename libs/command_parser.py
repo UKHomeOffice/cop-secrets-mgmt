@@ -80,7 +80,7 @@ class CommandCheck(object):
 
     def get_envs(self):
         secret_env = os.environ.get('DEPLOY_ENV')
-        repo_secrets_file = os.environ.get('DRONE_WORKSPACE') + '/env.yaml
+        repo_secrets_file = f"{os.environ.get('DRONE_WORKSPACE')}/env.yaml"
         drone_server = os.environ.get('DRONE_SERVER')
         drone_user_token = os.environ.get('DRONE_TOKEN')
         drone_repo = os.environ.get('DRONE_REPO')
