@@ -13,7 +13,7 @@ steps:
   image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/dind
   commands:
   - n=0; while [ "$n" -lt 60 ] && [ ! docker stats --no-stream ]; do n=$(( n + 1 )); sleep 1; done
-  - docker build -t cop-secrets:$${DRONE_COMMIT_SHA} .
+  - docker build -t cop-secrets-mgmt:$${DRONE_COMMIT_SHA} .
   when:
     event:
     - push
@@ -23,7 +23,7 @@ steps:
   image: 340268328991.dkr.ecr.eu-west-2.amazonaws.com/acp/anchore-submission:latest
   environment:
     DOCKERFILE: Dockerfile
-    IMAGE_NAME: cop-secrets:${DRONE_COMMIT_SHA}
+    IMAGE_NAME: cop-secrets-mgmt:${DRONE_COMMIT_SHA}
     LOCAL_IMAGE: true
     TOLERATE: low
     WHITELIST_FILE: whitelist
@@ -37,7 +37,7 @@ steps:
   image: plugins/docker
   settings:
     registry: quay.io
-    repo: quay.io/ukhomeofficedigital/cop-secrets
+    repo: quay.io/ukhomeofficedigital/cop-secrets-mgmt
     tags:
     - ${DRONE_COMMIT_SHA}
     - latest
