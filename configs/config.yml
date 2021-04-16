@@ -1,6 +1,8 @@
 aws:
   region: 'eu-west-2'
 
+projects_file: 'configs/project.yml'
+
 exclusion_lists:
   global:
     - 'accept_test_aws_access_key_id'
@@ -95,11 +97,9 @@ exclusion_lists:
     - 'log_level_info'
     - 'nginx_image'
     - 'nginx_tag'
-    - 'pdf_generator_aws_access_key_id'
     - 'pdf_generator_aws_s3_endpoint'
     - 'pdf_generator_aws_s3_port'
     - 'pdf_generator_aws_s3_region'
-    - 'pdf_generator_aws_secret_access_key'
     - 'perf_test_aws_access_key_id'
     - 'perf_test_aws_secret_access_key'
     - 'postgres_image'
@@ -244,4 +244,3 @@ exclusion_lists:
     - 'www_ref_url'
     - 'www_ui_environment'
     - 'www_url'
-
