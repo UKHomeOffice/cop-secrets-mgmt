@@ -5,11 +5,21 @@ WORKDIR /usr/src/app
 COPY requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
 
-RUN useradd secrets
 
-USER secrets
+RUN useradd deploy -d /usr/src/app ; \
+    touch /usr/src/app/.netrc ; \
+    chown -R deploy /usr/src/app
 
-COPY --chown=1000 *.py ./
-RUN chmod 755 *.py
 
-ENTRYPOINT ["python", "/usr/src/app/aws_secrets.py"]
+USER deploy
+
+COPY --chown=1000 aws_secrets ./
+COPY --chown=1000 libs ./libs/
+COPY --chown=1000 configs ./configs
+COPY --chown=1000 projects ./projects
+COPY --chown=1000 aws_secrets .
+COPY --chown=1000 aws_copy_secrets .
+
+RUN chmod 755 aws_secrets aws_copy_secrets
+
+ENTRYPOINT ["python", "/usr/src/app/aws_secrets"]
