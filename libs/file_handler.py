@@ -1,21 +1,71 @@
 #  file_handler - Handles most I/O file based operations
 
-import os
-import sys
-import yaml
 import json
 import logging
+import os
+import re
+import sys
 from shutil import copy2
+import uuid
+
+from ruamel import yaml
 
 
 class FileHandler(object):
     def __init__(self):
         self.config_file = ''
-        self.file_type = None
         self.data = ''
         self.yaml_types = ["yaml", "yml", "yl"]
         self.json_types = ["json", "jsn", "js", "jn"]
         self.prop_types = ["bash", "properties", "property", "prop", "sh"]
+        self.csv_types = ['csv']
+
+    @staticmethod
+    def check_uuid(uuid_val):
+        try:
+            return uuid.UUID(str(uuid_val))
+        except ValueError:
+            return None
+
+    @staticmethod
+    def check_location_id(value):
+        if re.match('^\d{1,3}$', value):
+            return True
+        return False
+
+    @staticmethod
+    def clean_values(values):
+        cleaned_values = []
+        for value in values:
+            value = value.strip()
+            if value.startswith('\'') and value.endswith('\''):
+                value = value[1:]
+                value = value[:-1]
+            if value.startswith('\"') and value.endswith('\"'):
+                value = value[1:]
+                value = value[:-1]
+            cleaned_values.append(value)
+        return cleaned_values
+
+    @staticmethod
+    def dir_exists(path):
+        return os.path.isdir(path)
+
+    @staticmethod
+    def file_exists(path):
+        return os.path.isfile(path)
+
+    def check_file_type(self, file_type=None):
+        if file_type:
+            file_type = file_type.lower()
+
+        if not file_type:
+            try:
+                file_type = self.config_file.split('.')[-1].lower()
+            except (TypeError, AttributeError, IOError, KeyError) as err:
+                logging.warning("Cannot properly determine file Extension: Error: %s", str(err))
+                print("Cannot properly determine file Extension: Error: %s", str(err))
+        return file_type
 
     def copy_file(self, source=None, dest=None):
         self.make_dir(path=dest)
@@ -26,14 +76,15 @@ class FileHandler(object):
         file_path, file_name = os.path.split(path)
 
         if file_path:
-            if not os.path.exists(file_path):
+            if not self.dir_exists(file_path):
                 logging.info("Creating Directory: %s", file_path)
                 os.makedirs(file_path)
 
     def read_yaml(self, file_type=None):
+        file_type = self.check_file_type(file_type=file_type)
+
         if file_type not in self.yaml_types:
             if file_type not in self.json_types:
-                # print("file_type currently: %s" %(file_type))
                 return False
 
         try:
@@ -47,6 +98,8 @@ class FileHandler(object):
         return False
 
     def read_json(self, file_type=None):
+        file_type = self.check_file_type(file_type=file_type)
+
         if file_type not in self.json_types:
             return False
 
@@ -61,6 +114,8 @@ class FileHandler(object):
         return False
 
     def read_properties(self, file_type=None):
+        file_type = self.check_file_type(file_type=file_type)
+
         if file_type not in self.prop_types:
             return False
 
@@ -105,25 +160,45 @@ class FileHandler(object):
             pass
         return False
 
+    def read_csv(self, file_type=None):
+        file_type = self.check_file_type(file_type=file_type)
+
+        if file_type not in self.csv_types:
+            print(f"{file_type} does not match {self.csv_types}")
+            return False
+
+        data = {}
+        try:
+            with open(self.config_file, "r") as config:
+                for idx, line in enumerate(config):
+                    if line.startswith('#'):
+                        continue
+                    if len(line.strip()) == 0:
+                        continue
+                    line = line.split('#', 1)[0]
+                    line = line.rstrip()
+                    values = line.split(",")
+                    values = self.clean_values(values)
+                    if f'csv_line{idx}' not in data:
+                        data[f'csv_line{idx}'] = dict()
+                    data[f'csv_line{idx}']['values'] = values
+            return data
+        except (TypeError, IOError) as err:
+            return False
+
     def read_file(self, config_file=None, file_type=None):
         self.config_file = config_file
-        if file_type:
-            file_type = file_type.lower()
-        else:
-            try:
-                file_type = self.config_file.split('.')[-1].lower()
-            except (TypeError, AttributeError, IOError, KeyError) as err:
-                logging.warning(f'Cannot properly determine file Extension: Error: {str(err)}')
-
+        file_type = self.check_file_type(file_type=file_type)
         config_data = self.read_yaml(file_type=file_type)
         if not config_data:
             config_data = self.read_json(file_type=file_type)
         if not config_data:
             config_data = self.read_properties(file_type=file_type)
         if not config_data:
+            config_data = self.read_csv_format(file_type=file_type)
+        if not config_data:
             logging.warning("File appears to be empty, returning Null value")
             return None
-            # raise ValueError("Error Cannot Read Config File: {} ... Aborting".format(config_file))
         return config_data
 
     def read_std_file(self, file_name=None):
