@@ -35,9 +35,9 @@ class AWS(object):
         )
         creds = response['Credentials']
 
-        logging.info(f"\nexport AWS_ACCESS_KEY_ID={creds['AccessKeyId']}"
-                     f"export AWS_SECRET_ACCESS_KEY={creds['SecretAccessKey']}"
-                     f"export AWS_SESSION_TOKEN={creds['SessionToken']}")
+        logging.warning(f"\nexport AWS_ACCESS_KEY_ID={creds['AccessKeyId']}"
+                        f"\nexport AWS_SECRET_ACCESS_KEY={creds['SecretAccessKey']}"
+                        f"\nexport AWS_SESSION_TOKEN={creds['SessionToken']}")
 
         return boto3.client('secretsmanager',
                             aws_access_key_id=creds['AccessKeyId'],
@@ -58,7 +58,7 @@ class AWS(object):
         secret_name = secret.lower()
 
         try:
-            response = client.get_secret_value(SecretId=secret_name)
+            response = self.client.get_secret_value(SecretId=secret_name)
         except ClientError as list_e:
             if list_e.response['Error']['Code'] == 'DecryptionFailureException':
                 logging.error('Secrets Manager cannot decrypt the protected secret text using the provided KMS key')
@@ -66,6 +66,8 @@ class AWS(object):
             elif list_e.response['Error']['Code'] == 'AccessDeniedException':
                 logging.error('Access Denied')
                 exit(1)
+            elif list_e.response['Error']['Code'] == 'ResourceNotFoundException':
+                logging.warning(f'secret: {secret_name} not found :: skipping entry')
             else:
                 raise list_e
         else:
@@ -76,10 +78,37 @@ class AWS(object):
 
         try:
             secret_data[secret_name] = json.loads(secret)
-        except ValueError:
+        except (TypeError, ValueError):
             secret_data[secret_name] = secret
 
         return secret_data
+
+    def create_secret(self, name=None, secret_data=None):
+        response = None
+        if isinstance(secret_data, dict):
+            secret_data = json.dumps(secret_data, indent=4)
+
+        if not isinstance(secret_data, str):
+            secret_data = str(secret_data)
+
+        try:
+            response = self.client.create_secret(
+                Name=name,
+                SecretString=secret_data
+            )
+        except ClientError as list_e:
+            if list_e.response['Error']['Code'] == 'DecryptionFailureException':
+                logging.error('Secrets Manager cannot decrypt the protected secret text using the provided KMS key')
+                exit(1)
+            elif list_e.response['Error']['Code'] == 'AccessDeniedException':
+                logging.error('Access Denied')
+                exit(1)
+            elif list_e.response['Error']['Code'] == 'ResourceExistsException':
+                logging.warning(f'secret: {name} already exists :: skipping entry')
+            else:
+                raise list_e
+
+        return response
 
     def update_secret(self, secret=None):
         # ToDo: this code needs work - just copy / pasted from original

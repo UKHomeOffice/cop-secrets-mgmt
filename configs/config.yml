@@ -1,7 +1,7 @@
 aws:
   region: 'eu-west-2'
 
-projects_file: 'configs/project.yml'
+projects_file: 'projects/projects.yml'
 
 exclusion_lists:
   global:
